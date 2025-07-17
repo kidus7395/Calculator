@@ -1,84 +1,152 @@
 #include <iostream>
-#include <stack>
-#include <cctype>
-#include <sstream>
-#include <cmath>
+#include <fstream>
+#include <vector>
+#include <string>
 using namespace std;
 
-int precedence(char op) {
-    if (op == '+' || op == '-') return 1;
-    if (op == '*' || op == '/' || op == '%') return 2;
-    return 0;
+struct Driver {
+    string name;
+    string licenseNumber;
+    string address;
+};
+
+struct Vehicle {
+    string registrationNumber;
+    string type;
+    string ownerLicense;
+};
+
+struct Violation {
+    string licenseNumber;
+    string violationType;
+    double fine;
+    string date;
+};
+
+vector<Driver> drivers;
+vector<Vehicle> vehicles;
+vector<Violation> violations;
+
+void addDriver() {
+    Driver d;
+    cout << "\nEnter Driver Name: ";
+    cin.ignore();
+    getline(cin, d.name);
+    cout << "Enter License Number: ";
+    getline(cin, d.licenseNumber);
+    cout << "Enter Address: ";
+    getline(cin, d.address);
+    drivers.push_back(d);
+    cout << "Driver added successfully.\n";
 }
 
-double applyOp(double a, double b, char op) {
-    switch (op) {
-        case '+': return a + b;
-        case '-': return a - b;
-        case '*': return a * b;
-        case '/': return b != 0 ? a / b : NAN;
-        case '%': return (int)a % (int)b;
-        default: return 0;
+void addVehicle() {
+    Vehicle v;
+    cout << "\nEnter Vehicle Registration Number: ";
+    cin.ignore();
+    getline(cin, v.registrationNumber);
+    cout << "Enter Vehicle Type (Car/Bike/Truck): ";
+    getline(cin, v.type);
+    cout << "Enter Owner License Number: ";
+    getline(cin, v.ownerLicense);
+    vehicles.push_back(v);
+    cout << "Vehicle added successfully.\n";
+}
+
+void addViolation() {
+    Violation v;
+    cout << "\nEnter Driver License Number: ";
+    cin.ignore();
+    getline(cin, v.licenseNumber);
+    cout << "Enter Violation Type (Speeding, Red Light, etc): ";
+    getline(cin, v.violationType);
+    cout << "Enter Fine Amount: ";
+    cin >> v.fine;
+    cin.ignore();
+    cout << "Enter Date (dd/mm/yyyy): ";
+    getline(cin, v.date);
+    violations.push_back(v);
+    cout << "Violation recorded.\n";
+}
+
+void displayDrivers() {
+    cout << "\n--- Driver Records ---\n";
+    for (const auto& d : drivers) {
+        cout << "Name: " << d.name << ", License: " << d.licenseNumber << ", Address: " << d.address << endl;
     }
 }
 
-double evaluate(const string& expr) {
-    stack<double> values;
-    stack<char> ops;
-    istringstream ss(expr);
-    char ch;
+void displayVehicles() {
+    cout << "\n--- Vehicle Records ---\n";
+    for (const auto& v : vehicles) {
+        cout << "Reg No: " << v.registrationNumber << ", Type: " << v.type << ", Owner License: " << v.ownerLicense << endl;
+    }
+}
 
-    while (ss >> ch) {
-        if (isdigit(ch) || ch == '.') {
-            ss.putback(ch);
-            double val;
-            ss >> val;
-            values.push(val);
-        }
-        else if (ch == '(') {
-            ops.push(ch);
-        }
-        else if (ch == ')') {
-            while (!ops.empty() && ops.top() != '(') {
-                double b = values.top(); values.pop();
-                double a = values.top(); values.pop();
-                char op = ops.top(); ops.pop();
-                values.push(applyOp(a, b, op));
-            }
-            if (!ops.empty()) ops.pop(); // remove '('
-        }
-        else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%') {
-            while (!ops.empty() && precedence(ops.top()) >= precedence(ch)) {
-                double b = values.top(); values.pop();
-                double a = values.top(); values.pop();
-                char op = ops.top(); ops.pop();
-                values.push(applyOp(a, b, op));
-            }
-            ops.push(ch);
+void displayViolations() {
+    cout << "\n--- Violation Records ---\n";
+    for (const auto& v : violations) {
+        cout << "License: " << v.licenseNumber << ", Violation: " << v.violationType
+             << ", Fine: " << v.fine << ", Date: " << v.date << endl;
+    }
+}
+
+void searchViolationsByLicense() {
+    string license;
+    cout << "\nEnter License Number to Search Violations: ";
+    cin.ignore();
+    getline(cin, license);
+    bool found = false;
+    for (const auto& v : violations) {
+        if (v.licenseNumber == license) {
+            found = true;
+            cout << "Violation: " << v.violationType << ", Fine: " << v.fine << ", Date: " << v.date << endl;
         }
     }
-
-    while (!ops.empty()) {
-        double b = values.top(); values.pop();
-        double a = values.top(); values.pop();
-        char op = ops.top(); ops.pop();
-        values.push(applyOp(a, b, op));
+    if (!found) {
+        cout << "No violations found for this license.\n";
     }
+}
 
-    return values.top();
+void saveData() {
+    ofstream out("traffic_data.txt");
+    for (auto& d : drivers)
+        out << "D," << d.name << "," << d.licenseNumber << "," << d.address << "\n";
+    for (auto& v : vehicles)
+        out << "V," << v.registrationNumber << "," << v.type << "," << v.ownerLicense << "\n";
+    for (auto& v : violations)
+        out << "T," << v.licenseNumber << "," << v.violationType << "," << v.fine << "," << v.date << "\n";
+    out.close();
+    cout << "Data saved to traffic_data.txt\n";
 }
 
 int main() {
-    string expression;
-    cout << "Enter expression (e.g., 10 + 5 * 2 - 3): ";
-    getline(cin, expression);
+    int choice;
+    do {
+        cout << "\n==== Traffic Management System ====\n";
+        cout << "1. Add Driver\n";
+        cout << "2. Add Vehicle\n";
+        cout << "3. Record Violation\n";
+        cout << "4. Display All Drivers\n";
+        cout << "5. Display All Vehicles\n";
+        cout << "6. Display All Violations\n";
+        cout << "7. Search Violations by License\n";
+        cout << "8. Save & Exit\n";
+        cout << "Enter choice: ";
+        cin >> choice;
 
-    try {
-        double result = evaluate(expression);
-        cout << "Result: " << result << endl;
-    } catch (...) {
-        cout << "Invalid expression or division by zero." << endl;
-    }
+        switch (choice) {
+            case 1: addDriver(); break;
+            case 2: addVehicle(); break;
+            case 3: addViolation(); break;
+            case 4: displayDrivers(); break;
+            case 5: displayVehicles(); break;
+            case 6: displayViolations(); break;
+            case 7: searchViolationsByLicense(); break;
+            case 8: saveData(); break;
+            default: cout << "Invalid choice.\n";
+        }
+    } while (choice != 8);
 
     return 0;
 }
